@@ -1,0 +1,77 @@
+tls:
+  issuerName: nginx-issuer
+  secretName: nginx-tls
+  server: https://acme-v02.api.letsencrypt.org/directory
+  # server: https://acme-staging-v02.api.letsencrypt.org/directory
+
+sites:
+  - host: k3s.example.com
+    ingress:
+      name: k3s-proxy
+    svc:
+      namespace: kubernetes-dashboard
+      name: kubernetes-dashboard-kong-proxy
+      port: 443
+      protocol: HTTPS
+    acl:
+      - 10.42.0.0/16
+  - host: grafana.example.com
+    ingress:
+      name: grafana-proxy
+    svc:
+      namespace: prometheus
+      name: prometheus-grafana
+      port: 80
+      protocol: HTTP
+    acl:
+      - 10.42.0.0/16
+  - host: vpn.example.com
+    ingress:
+      name: marzban-proxy
+    svc:
+      namespace: marzban
+      name: app
+      port: 8000
+      protocol: HTTPS
+  - host: vcenter.example.com
+    ingress:
+      name: vcenter-proxy
+    svc:
+      namespace: vcenter
+      name: app
+      port: 8989
+      protocol: HTTPS
+    acl:
+      - 10.42.0.0/16
+  - host: pasta.example.com
+    ingress:
+      name: pasta-proxy
+    svc:
+      namespace: pasta
+      name: app
+      port: 7777
+      protocol: HTTP
+  - host: drawio.example.com
+    ingress:
+      name: drawio-proxy
+    svc:
+      namespace: drawio
+      name: app
+      port: 8080
+      protocol: HTTP
+  - host: pluml.example.com
+    ingress:
+      name: plantuml-proxy
+    svc:
+      namespace: plantuml
+      name: app
+      port: 8080
+      protocol: HTTP
+  - host: tools.example.com
+    ingress:
+      name: tools-proxy
+    svc:
+      namespace: tools
+      name: app
+      port: 80
+      protocol: HTTP

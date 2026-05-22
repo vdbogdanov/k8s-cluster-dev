@@ -1,0 +1,91 @@
+environments:
+  default:
+    values:
+    - secrets.cluster.yaml
+
+---
+
+repositories:
+- name: ingress-nginx
+  url: https://kubernetes.github.io/ingress-nginx
+- name: jetstack
+  url: https://charts.jetstack.io
+- name: crowdsec
+  url: https://crowdsecurity.github.io/helm-charts
+- name: prometheus-community
+  url: https://prometheus-community.github.io/helm-charts
+- name: gitlab-runner
+  url: https://charts.gitlab.io
+
+releases:
+- name: ingress-nginx
+  namespace: ingress-nginx
+  chart: ingress-nginx/ingress-nginx
+  values:
+  - {{ .Values.ingressNginx | toYaml | nindent 4 }}
+
+- name: cert-manager
+  namespace: cert-manager
+  chart: jetstack/cert-manager
+  version: v1.17.2
+  values:
+  - {{ .Values.certManager | toYaml | nindent 4 }}
+
+- name: crowdsec
+  namespace: crowdsec
+  chart: crowdsec/crowdsec
+  values:
+  - {{ .Values.crowdsec | toYaml | nindent 4 }}
+
+- name: monitoring
+  namespace: monitoring
+  chart: prometheus-community/kube-prometheus-stack
+  values:
+  - {{ .Values.monitoring | toYaml | nindent 4 }}
+
+- name: gitlab-runner
+  namespace: gitlab-runner
+  chart: gitlab-runner/gitlab-runner
+  values:
+  - {{ .Values.gitlabRunner | toYaml | nindent 4 }}
+
+- name: marzban
+  namespace: marzban
+  chart: apps/marzban
+  values:
+  - {{ .Values.marzban | toYaml | nindent 4 }}
+  needs:
+  - cert-manager/cert-manager
+
+- name: pasta
+  namespace: pasta
+  chart: apps/pasta
+
+- name: drawio
+  namespace: drawio
+  chart: apps/drawio
+
+- name: drawdb
+  namespace: drawdb
+  chart: apps/drawdb
+
+- name: plantuml
+  namespace: plantuml
+  chart: apps/plantuml
+
+- name: tools
+  namespace: tools
+  chart: apps/tools
+
+- name: vcenter
+  namespace: vcenter
+  chart: apps/vcenter
+
+- name: network
+  namespace: default
+  chart: network
+  values:
+  - {{ .Values.network | toYaml | nindent 4 }}
+  needs:
+  - cert-manager/cert-manager
+  - ingress-nginx/ingress-nginx

@@ -1,0 +1,25 @@
+storage:
+  size: 1Gi
+  path: /mnt/k3s/marzban
+  storageClassName: local-path
+
+pod:
+  restartPolicy: Always
+
+containers:
+  app:
+    image: gozargah/marzban:v0.8.4
+    resources:
+      limits:
+        memory: 256Mi
+        cpu: 250m
+
+config:
+  vpn:
+    vless:
+      dest: google.com:443
+      serverNames: ["google.com"]
+      privateKey: AJPbj4ftkYhB_KG1amEVLG4NK51pdmsCGH6ScU6w62Q
+      SpiderX: /example
+      shortIds: ea1058117be12087
+      port: 30443

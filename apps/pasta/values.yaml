@@ -1,0 +1,16 @@
+pod:
+  restartPolicy: Always
+
+containers:
+  app:
+    image: ghcr.io/vdbogdanov/haste-server:latest
+    resources:
+      limits:
+        memory: 256Mi
+        cpu: 250m
+  db:
+    image: memcached:1.6.38
+    resources:
+      limits:
+        memory: 256Mi
+        cpu: 250m

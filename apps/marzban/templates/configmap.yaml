@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xray-config
+data:
+  xray_config.json: |
+    {
+      "log": {
+        "loglevel": "warning"
+      },
+      "routing": {
+        "rules": [
+          {
+            "ip": [
+              "geoip:private"
+            ],
+            "outboundTag": "BLOCK",
+            "type": "field"
+          }
+        ]
+      },
+      "inbounds": [
+        {
+          "tag": "VLESS TCP REALITY",
+          "listen": "0.0.0.0",
+          "port": {{ .Values.config.vpn.vless.port }},
+          "protocol": "vless",
+          "settings": {
+            "clients": [],
+            "decryption": "none"
+          },
+          "streamSettings": {
+            "network": "tcp",
+            "tcpSettings": {},
+            "security": "reality",
+            "realitySettings": {
+              "show": false,
+              "dest": "{{ .Values.config.vpn.vless.dest }}",
+              "xver": 0,
+              "serverNames": {{ .Values.config.vpn.vless.serverNames | toJson }},
+              "privateKey": "{{ .Values.config.vpn.vless.privateKey }}",
+              "SpiderX": "{{ .Values.config.vpn.vless.SpiderX }}",
+              "shortIds": [
+                "{{ .Values.config.vpn.vless.shortIds }}"
+              ]
+            }
+          },
+          "sniffing": {
+            "enabled": true,
+            "destOverride": [
+              "http",
+              "tls",
+              "quic"
+            ]
+          }
+        }
+      ],
+      "outbounds": [
+        {
+          "protocol": "freedom",
+          "tag": "DIRECT"
+        },
+        {
+          "protocol": "blackhole",
+          "tag": "BLOCK"
+        }
+      ]
+    }

@@ -1,0 +1,10 @@
+pod:
+  restartPolicy: Always
+
+containers:
+  app:
+    image: ghcr.io/vdbogdanov/plantuml-server:latest
+    resources:
+      limits:
+        memory: 256Mi
+        cpu: 250m
