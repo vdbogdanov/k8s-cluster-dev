@@ -1,7 +1,5 @@
 # k8s-cluster-dev
 
----
-
 This repository contains a set of helm charts combined using helmfile for easy deployment and management of applications in the k8s cluster. Example usage for k3s.
 
 ## Get started
