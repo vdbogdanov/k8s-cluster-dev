@@ -1,0 +1,20 @@
+deployments: []
+
+statefulsets: []
+
+volumes: []
+
+services: []
+
+gateway:
+  name: edge-gateway
+  namespace: envoy-gateway-system
+  host: ""
+  tls:
+    enabled: false
+  mtls:
+    enabled: false
+
+secrets: []
+
+configmaps: []

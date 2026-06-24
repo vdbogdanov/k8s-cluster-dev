@@ -1,0 +1,106 @@
+{{- range .Values.statefulsets }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  serviceName: {{ .serviceName | default .name }}
+  replicas: {{ .replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      component: {{ .name }}
+  template:
+    metadata:
+      labels:
+        component: {{ .name }}
+    spec:
+      {{- with .initContainers }}
+      initContainers:
+        {{- range . }}
+        - name: {{ .name }}
+          image: {{ .image.repository }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          {{- with .command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      containers:
+        {{- range .containers }}
+        - name: {{ .name }}
+          image: {{ .image.repository }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          {{- with .command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- with .volumes }}
+      volumes:
+        {{- range . }}
+        - name: {{ .name }}
+          {{- if eq .type "emptyDir" }}
+          emptyDir:
+            sizeLimit: 2Gi
+          {{- else if eq .type "secret" }}
+          secret:
+            secretName: {{ .name }}
+          {{- else if eq .type "configMap" }}
+          configMap:
+            name: {{ .name }}
+          {{- else if eq .type "persistentVolumeClaim" }}
+          persistentVolumeClaim:
+            claimName: {{ .name }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+  {{- with .volumeClaimTemplates }}
+  volumeClaimTemplates:
+    {{- range . }}
+    - metadata:
+        name: {{ .name }}
+      spec:
+        storageClassName: {{ .storageClassName }}
+        accessModes:
+          {{- toYaml .accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .storage }}
+    {{- end }}
+  {{- end }}
+{{- end }}

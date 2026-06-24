@@ -1,0 +1,181 @@
+deployments:
+  - name: app
+    replicaCount: 1
+    initContainers:
+      - name: wait-for-postgresql
+        image:
+          repository: busybox:1.38.0
+          pullPolicy: IfNotPresent
+        command: ["/bin/sh", "-c", "until nc -z postgresql 5432; do echo 'PostgreSQL not ready, retrying...'; sleep 2; done && echo 'PostgreSQL is ready!'"]
+    containers:
+      - name: app
+        image:
+          repository: ghcr.io/vdbogdanov/pastebin-server:8c743d9
+          pullPolicy: IfNotPresent
+        ports:
+          - name: http
+            containerPort: 7777
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /documents/about
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        env:
+          - name: STORAGE_EXPIRE_SECONDS
+            value: "31536000"
+          - name: STORAGE_TYPE
+            value: "postgres"
+          - name: STORAGE_HOST
+            value: "postgresql"
+          - name: STORAGE_PORT
+            value: "5432"
+          - name: STORAGE_DB
+            valueFrom:
+              secretKeyRef:
+                name: app
+                key: POSTGRES_DB
+          - name: STORAGE_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: app
+                key: POSTGRES_USER
+          - name: STORAGE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: app
+                key: POSTGRES_PASSWORD
+
+statefulsets:
+  - name: postgresql
+    serviceName: postgresql
+    replicaCount: 1
+    containers:
+      - name: postgresql
+        image:
+          repository: postgres:17
+          pullPolicy: IfNotPresent
+        ports:
+          - name: db
+            containerPort: 5432
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        startupProbe:
+          exec:
+            command: ["/bin/sh", "-c", "exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB --timeout=5"]
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB --timeout=5"]
+          initialDelaySeconds: 0
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "exec pg_isready -U $POSTGRES_USER -d $POSTGRES_DB --timeout=5"]
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        env:
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                name: app
+                key: POSTGRES_DB
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: app
+                key: POSTGRES_USER
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: app
+                key: POSTGRES_PASSWORD
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+          - name: postgresql-init
+            mountPath: /docker-entrypoint-initdb.d
+          - name: postgresql-data-pvc
+            mountPath: /var/lib/postgresql/data
+    volumes:
+      - name: postgresql-init
+        type: configMap
+      - name: postgresql-data-pvc
+        type: persistentVolumeClaim
+        storageClassName: production
+        accessModes:
+          - ReadWriteOnce
+        storage: 4Gi
+
+services:
+  - name: app
+    type: ClusterIP
+    selector:
+      component: app
+    ports:
+      - name: http
+        port: 7777
+        targetPort: http
+        protocol: TCP
+  - name: postgresql
+    type: ClusterIP
+    selector:
+      component: postgresql
+    ports:
+      - name: db
+        port: 5432
+        targetPort: db
+        protocol: TCP
+
+gateway:
+  host: ""
+  tls:
+    enabled: true
+
+secrets:
+  - name: "app"
+    data:
+      POSTGRES_DB: "pastebin"
+      POSTGRES_USER: "pastebin"
+      POSTGRES_PASSWORD: ""
+
+configmaps:
+  - name: "postgresql-init"
+    data:
+      init.sql: |
+        CREATE TABLE IF NOT EXISTS entries (
+            id serial primary key,
+            key varchar(255) not null,
+            value text not null,
+            expiration int,
+            unique(key)
+        );

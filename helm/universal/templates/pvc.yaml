@@ -1,0 +1,19 @@
+{{- range (concat .Values.deployments .Values.statefulsets) }}
+{{- range .volumes }}
+{{- if eq .type "persistentVolumeClaim" }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  storageClassName: {{ .storageClassName }}
+  accessModes:
+    {{- toYaml .accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .storage }}
+{{- end }}
+{{- end }}
+{{- end }}

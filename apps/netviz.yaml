@@ -1,0 +1,50 @@
+deployments:
+  - name: app
+    replicaCount: 1
+    containers:
+      - name: app
+        image:
+          repository: ghcr.io/vdbogdanov/netviz-server:17b5813
+          pullPolicy: IfNotPresent
+        ports:
+          - name: http
+            containerPort: 9090
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+services:
+  - name: app
+    type: ClusterIP
+    selector:
+      component: app
+    ports:
+      - name: http
+        port: 9090
+        targetPort: http
+        protocol: TCP
+
+gateway:
+  host: ""
+  tls:
+    enabled: true

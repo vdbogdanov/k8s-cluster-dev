@@ -58,5 +58,5 @@ Backups.backupdb
 MobileBackups.trash
 tmbootpicker.efi
 
-secrets.*.yaml
-!secrets.example.yaml
+.env
+pki/

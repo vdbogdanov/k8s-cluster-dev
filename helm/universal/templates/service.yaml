@@ -1,0 +1,14 @@
+{{- range .Values.services }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  type: {{ .type }}
+  selector:
+    {{- toYaml .selector | nindent 4 }}
+  ports:
+    {{- toYaml .ports | nindent 4 }}
+{{- end }}
